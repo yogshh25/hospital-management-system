@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-dashboard">
+  <div class="page-header">
+    <h2><i class="fas fa-user-shield"></i> Admin Dashboard</h2>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Notifications & Alerts Section -->
+    <div class="dashboard-section alerts-section">
+      <div class="section-header">
+        <h3><i class="fas fa-bell"></i> Notifications & Alerts</h3>
+        <div class="filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="inventory">Inventory</button>
+          <button class="filter-btn" data-filter="appointments">Appointments</button>
+          <button class="filter-btn" data-filter="system">System</button>
+        </div>
+      </div>
+      <div class="alerts-container" id="alerts-list">
+        <!-- Alerts will be populated here -->
+        <div class="loading">Loading alerts...</div>
+      </div>
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="dashboard-section stats-section">
+      <div class="section-header">
+        <h3><i class="fas fa-chart-pie"></i> Quick Stats</h3>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon appointments">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Today's Appointments</h4>
+            <div class="stat-value" id="today-appointments">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon doctors">
+            <i class="fas fa-user-md"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Active Doctors</h4>
+            <div class="stat-value" id="active-doctors">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon inventory">
+            <i class="fas fa-boxes"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Low Stock Items</h4>
+            <div class="stat-value" id="low-stock">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon patients">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Total Patients</h4>
+            <div class="stat-value" id="total-patients">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Actions Section -->
+    <div class="dashboard-section actions-section">
+      <div class="section-header">
+        <h3><i class="fas fa-cog"></i> Admin Actions</h3>
+      </div>
+      <div class="admin-actions">
+        <div class="action-card">
+          <h4><i class="fas fa-user-cog"></i> Account Settings</h4>
+          <form class="admin-form" id="admin-settings-form">
+            <div class="form-group">
+              <label for="admin-name">Display Name</label>
+              <input type="text" id="admin-name" name="admin-name" value="Admin" required>
+            </div>
+            <div class="form-group">
+              <label for="admin-email">Email</label>
+              <input type="email" id="admin-email" name="admin-email" required>
+            </div>
+            <button type="submit" class="btn primary">Update Profile</button>
+          </form>
+        </div>
+        
+        <div class="action-card">
+          <h4><i class="fas fa-lock"></i> Security</h4>
+          <form class="admin-form" id="change-password-form">
+            <div class="form-group">
+              <label for="current-password">Current Password</label>
+              <input type="password" id="current-password" name="current-password" required>
+            </div>
+            <div class="form-group">
+              <label for="new-password">New Password</label>
+              <input type="password" id="new-password" name="new-password" required>
+            </div>
+            <div class="form-group">
+              <label for="confirm-password">Confirm Password</label>
+              <input type="password" id="confirm-password" name="confirm-password" required>
+            </div>
+            <button type="submit" class="btn primary">Change Password</button>
+          </form>
+        </div>
+
+        <div class="action-card">
+          <h4><i class="fas fa-database"></i> System</h4>
+          <div class="system-actions">
+            <button class="btn secondary" onclick="backupDatabase()">
+              <i class="fas fa-download"></i> Backup Database
+            </button>
+            <button class="btn secondary" onclick="clearAlerts()">
+              <i class="fas fa-broom"></i> Clear All Alerts
+            </button>
+            <button class="btn danger" onclick="resetSystem()">
+              <i class="fas fa-exclamation-triangle"></i> Reset System
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const alertsList = document.getElementById('alerts-list');
+  const filters = document.querySelector('.filters');
+  let currentFilter = 'all';
+
+  // Handle filter clicks
+  filters.addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    
+    // Update active state
+    filters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    // Update filter and refresh
+    currentFilter = btn.dataset.filter;
+    loadAlerts();
+  });
+
+  async function updateStats() {
+    try {
+      const stats = await fetchJSON('/api/admin/stats');
+      document.getElementById('today-appointments').textContent = stats.todayAppointments;
+      document.getElementById('active-doctors').textContent = stats.activeDoctors;
+      document.getElementById('low-stock').textContent = stats.lowStockItems;
+      document.getElementById('total-patients').textContent = stats.totalPatients;
+    } catch (err) {
+      console.error('Error updating stats:', err);
+    }
+  }
+
+  async function loadAlerts() {
+    try {
+      const [alertsRes, apptsRes] = await Promise.all([
+        fetchJSON('/api/inventory/alerts'),
+        fetchJSON('/api/appointments')
+      ]);
+      
+      const alerts = [];
+      const now = new Date();
+      
+      // Process inventory alerts
+      if (alertsRes.alerts && alertsRes.alerts.length) {
+        alertsRes.alerts.forEach(alert => {
+          alerts.push({
+            type: 'inventory',
+            icon: 'fas fa-exclamation-triangle',
+            title: 'Inventory Alert',
+            message: alert.message,
+            priority: alert.level || 'medium',
+            time: now.toISOString()
+          });
+        });
+      }
+      
+      // Process appointment alerts
+      if (apptsRes && apptsRes.length) {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        apptsRes.forEach(appt => {
+          const apptDate = new Date(appt.appointment_date);
+          if (apptDate <= tomorrow) {
+            alerts.push({
+              type: 'appointments',
+              icon: 'fas fa-calendar-check',
+              title: 'Upcoming Appointment',
+              message: `${appt.patient} with Dr. ${appt.doctor}`,
+              priority: apptDate <= today ? 'high' : 'medium',
+              time: appt.appointment_date
+            });
+          }
+        });
+      }
+
+      // Filter alerts
+      const filtered = currentFilter === 'all' 
+        ? alerts 
+        : alerts.filter(a => a.type === currentFilter);
+      
+      // Sort by priority and time
+      filtered.sort((a, b) => {
+        const priority = { high: 3, medium: 2, low: 1 };
+        return priority[b.priority] - priority[a.priority] 
+          || new Date(b.time) - new Date(a.time);
+      });
+
+      // Update UI
+      if (filtered.length) {
+        alertsList.innerHTML = filtered.map(alert => `
+          <div class="alert-card ${alert.type} priority-${alert.priority}">
+            <div class="alert-icon">
+              <i class="${alert.icon}"></i>
+            </div>
+            <div class="alert-content">
+              <h4>${alert.title}</h4>
+              <p>${alert.message}</p>
+              <div class="alert-meta">
+                <span class="alert-time">${new Date(alert.time).toLocaleString()}</span>
+                <span class="alert-type">${alert.type}</span>
+              </div>
+            </div>
+            <button class="dismiss-alert" title="Dismiss">×</button>
+          </div>
+        `).join('');
+      } else {
+        alertsList.innerHTML = `
+          <div class="no-alerts">
+            <i class="fas fa-check-circle"></i>
+            <p>No notifications at this time</p>
+          </div>
+        `;
+      }
+    } catch (err) {
+      alertsList.innerHTML = `
+        <div class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>Error loading alerts: ${err.message}</p>
+        </div>
+      `;
+    }
+  }
+
+  // Handle admin settings form
+  const adminSettingsForm = document.getElementById('admin-settings-form');
+  adminSettingsForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await fetchJSON('/api/admin/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          name: document.getElementById('admin-name').value,
+          email: document.getElementById('admin-email').value
+        })
+      });
+      alert('Profile updated successfully');
+    } catch (err) {
+      alert('Error updating profile: ' + err.message);
+    }
+  });
+
+  // Handle password change form
+  const passwordForm = document.getElementById('change-password-form');
+  passwordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPass = document.getElementById('new-password').value;
+    const confirmPass = document.getElementById('confirm-password').value;
+    
+    if (newPass !== confirmPass) {
+      alert('New passwords do not match');
+      return;
+    }
+    
+    try {
+      await fetchJSON('/api/admin/password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          current: document.getElementById('current-password').value,
+          new: newPass
+        })
+      });
+      alert('Password changed successfully');
+      passwordForm.reset();
+    } catch (err) {
+      alert('Error changing password: ' + err.message);
+    }
+  });
+
+  // System action handlers
+  window.backupDatabase = async () => {
+    if (!confirm('Create database backup?')) return;
+    try {
+      const response = await fetchJSON('/api/admin/backup', { method: 'POST' });
+      alert('Database backup created successfully');
+    } catch (err) {
+      alert('Error creating backup: ' + err.message);
+    }
+  };
+
+  window.clearAlerts = async () => {
+    if (!confirm('Clear all alerts? This cannot be undone.')) return;
+    try {
+      await fetchJSON('/api/admin/clear-alerts', { method: 'POST' });
+      loadAlerts();
+      alert('All alerts cleared');
+    } catch (err) {
+      alert('Error clearing alerts: ' + err.message);
+    }
+  };
+
+  window.resetSystem = async () => {
+    if (!confirm('DANGER: Reset entire system? All data will be lost!')) return;
+    if (!confirm('Are you absolutely sure? This cannot be undone!')) return;
+    try {
+      await fetchJSON('/api/admin/reset', { method: 'POST' });
+      alert('System reset successfully. The page will now reload.');
+      window.location.reload();
+    } catch (err) {
+      alert('Error resetting system: ' + err.message);
+    }
+  };
+
+  // Initial load
+  loadAlerts();
+  updateStats();
+
+  // Refresh data periodically
+  setInterval(loadAlerts, 60 * 1000);
+  setInterval(updateStats, 60 * 1000);
+});
+</script>
+{% endblock %}

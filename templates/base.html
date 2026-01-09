@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title or "MediCare" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="sidebar">
+        <div class="brand">
+          <i class="fas fa-hospital-symbol"></i>
+          <span>MediCare</span>
+        </div>
+        <ul class="nav">
+          <li class="{{ 'active' if request.path=='/' else '' }}"><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Dashboard</a></li>
+          <li class="{{ 'active' if request.path=='/patients/new' else '' }}"><a href="{{ url_for('new_patient') }}"><i class="fas fa-user-plus"></i> Add Patient</a></li>
+          <li class="{{ 'active' if request.path=='/appointments' else '' }}"><a href="{{ url_for('appointments') }}"><i class="fas fa-calendar-check"></i> Appointments</a></li>
+          <li class="{{ 'active' if request.path.startswith('/doctors') else '' }}"><a href="{{ url_for('doctors') }}"><i class="fas fa-user-md"></i> Doctors</a></li>
+          <li class="{{ 'active' if request.path=='/inventory' else '' }}"><a href="{{ url_for('inventory') }}"><i class="fas fa-boxes"></i> Inventory</a></li>
+          <li class="{{ 'active' if request.path=='/ai-search' else '' }}"><a href="{{ url_for('ai_search') }}"><i class="fas fa-robot"></i> AI Search</a></li>
+          <li class="{{ 'active' if request.path=='/reports' else '' }}"><a href="{{ url_for('reports') }}"><i class="fas fa-chart-line"></i> Reports</a></li>
+        </ul>
+      </nav>
+
+      <div class="main">
+        <header class="topbar">
+          <div class="left">
+            <button id="sidebar-toggle" class="hamburger" type="button" aria-label="Toggle sidebar" aria-expanded="true">
+              <i class="fas fa-bars" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="right">
+            <div class="search">
+              <input id="global-search" placeholder="Ask: 'Show today's appointments' or search..." />
+              <i class="fas fa-search" onclick="handleGlobalSearch()"></i>
+            </div>
+            <div class="profile">
+              <div class="notifications" id="notifications">
+                <button id="notification-btn" aria-label="Notifications" class="icon-btn">
+                  <i class="fas fa-bell"></i>
+                  <span class="badge" id="notification-count">0</span>
+                </button>
+                <div class="dropdown" id="notifications-dropdown">
+                  <div class="dropdown-header"><h4>Notifications</h4></div>
+                  <div class="dropdown-content" id="notifications-list">
+                    <div class="notification-item">Loading...</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-menu" id="admin-menu">
+                <button id="admin-btn" class="icon-btn" aria-label="Admin menu">
+                  <img src="https://via.placeholder.com/36" alt="Admin" class="avatar">
+                </button>
+                <span class="admin-name">Admin</span>
+                <i class="fas fa-chevron-down" style="font-size: 0.75rem; color: var(--muted);"></i>
+                <div class="dropdown" id="admin-dropdown">
+                  <div class="dropdown-header"><h4>Account</h4></div>
+                  <div class="dropdown-content">
+                    <a href="{{ url_for('profile') }}"><i class="fas fa-user"></i> Profile</a>
+                    <a href="{{ url_for('settings') }}"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="#" onclick="handleLogout(); return false;" class="text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main class="content">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              <div class="flashes">
+                {% for category, msg in messages %}
+                  <div class="flash {{ category }}">{{ msg }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endwith %}
+          {% block content %}{% endblock %}
+        </main>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

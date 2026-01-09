@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Background Hero -->
+<div class="page-background bg-patients">
+  <div class="page-background-content">
+    <h1><i class="fas fa-user-plus"></i> Patient Registration</h1>
+    <p class="subtitle">Register new patients and manage patient information</p>
+  </div>
+</div>
+
+<div class="form-wrap">
+  <div class="form-card">
+    <h2><i class="fas fa-user-plus"></i> Add New Patient</h2>
+    <form method="post" action="{{ url_for('new_patient') }}" class="patient-form">
+      <label class="field">
+        <span class="label">Full name</span>
+        <input name="name" type="text" placeholder="John Doe" required>
+      </label>
+
+      <label class="field">
+        <span class="label">Date of Birth</span>
+        <input name="dob" type="date" placeholder="yyyy-mm-dd">
+      </label>
+
+      <label class="field">
+        <span class="label">Contact</span>
+        <input name="contact" type="text" placeholder="Phone number">
+      </label>
+
+      <div class="form-actions">
+        <button type="submit" class="btn primary">Create</button>
+        <a class="btn ghost" href="{{ url_for('index') }}">Back</a>
+      </div>
+      <p class="hint">Fields marked required must be filled before submission.</p>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="alerts-page">
+  <div class="page-header">
+    <h2><i class="fas fa-bell"></i> Notifications & Alerts</h2>
+  </div>
+
+  <div class="alerts-container">
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="inventory">Inventory</button>
+      <button class="filter-btn" data-filter="appointments">Appointments</button>
+      <button class="filter-btn" data-filter="system">System</button>
+    </div>
+
+    <div class="alerts-grid">
+      <div class="alerts-section" id="alerts-list">
+        <!-- Alerts will be populated here by JavaScript -->
+        <div class="loading">Loading alerts...</div>
+      </div>
+    </div>
+
+    <div class="no-alerts hidden">
+      <i class="fas fa-check-circle"></i>
+      <p>No notifications at this time</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Initialize the alerts page
+  document.addEventListener('DOMContentLoaded', () => {
+    const alertsList = document.getElementById('alerts-list');
+    const noAlerts = document.querySelector('.no-alerts');
+    const filters = document.querySelector('.filters');
+    let currentFilter = 'all';
+
+    // Handle filter clicks
+    filters.addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+      
+      // Update active state
+      filters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Update filter and refresh
+      currentFilter = btn.dataset.filter;
+      loadAlerts();
+    });
+
+    async function loadAlerts() {
+      try {
+        // Fetch both inventory alerts and appointments
+        const [alertsRes, apptsRes] = await Promise.all([
+          fetchJSON('/api/inventory/alerts'),
+          fetchJSON('/api/appointments')
+        ]);
+        
+        const alerts = [];
+        const now = new Date();
+        
+        // Process inventory alerts
+        if (alertsRes.alerts && alertsRes.alerts.length) {
+          alertsRes.alerts.forEach(alert => {
+            alerts.push({
+              type: 'inventory',
+              icon: 'fas fa-exclamation-triangle',
+              title: 'Inventory Alert',
+              message: alert.message,
+              priority: alert.level || 'medium',
+              time: now.toISOString()
+            });
+          });
+        }
+        
+        // Process appointment alerts
+        if (apptsRes && apptsRes.length) {
+          const today = new Date();
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          
+          apptsRes.forEach(appt => {
+            const apptDate = new Date(appt.appointment_date);
+            if (apptDate <= tomorrow) {
+              alerts.push({
+                type: 'appointments',
+                icon: 'fas fa-calendar-check',
+                title: 'Upcoming Appointment',
+                message: `${appt.patient} with Dr. ${appt.doctor}`,
+                priority: apptDate <= today ? 'high' : 'medium',
+                time: appt.appointment_date
+              });
+            }
+          });
+        }
+
+        // Filter alerts based on current selection
+        const filtered = currentFilter === 'all' 
+          ? alerts 
+          : alerts.filter(a => a.type === currentFilter);
+        
+        // Sort by priority and time
+        filtered.sort((a, b) => {
+          const priority = { high: 3, medium: 2, low: 1 };
+          return priority[b.priority] - priority[a.priority] 
+            || new Date(b.time) - new Date(a.time);
+        });
+
+        // Update the UI
+        if (filtered.length) {
+          alertsList.innerHTML = filtered.map(alert => `
+            <div class="alert-card ${alert.type} priority-${alert.priority}">
+              <div class="alert-icon">
+                <i class="${alert.icon}"></i>
+              </div>
+              <div class="alert-content">
+                <h4>${alert.title}</h4>
+                <p>${alert.message}</p>
+                <div class="alert-meta">
+                  <span class="alert-time">${new Date(alert.time).toLocaleString()}</span>
+                  <span class="alert-type">${alert.type}</span>
+                </div>
+              </div>
+              <button class="dismiss-alert" title="Dismiss">×</button>
+            </div>
+          `).join('');
+          noAlerts.classList.add('hidden');
+          alertsList.classList.remove('hidden');
+        } else {
+          noAlerts.classList.remove('hidden');
+          alertsList.classList.add('hidden');
+        }
+      } catch (err) {
+        alertsList.innerHTML = `
+          <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            <p>Error loading alerts: ${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Load alerts immediately and refresh every minute
+    loadAlerts();
+    setInterval(loadAlerts, 60 * 1000);
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Background Hero -->
+<div class="page-background bg-doctors">
+  <div class="page-background-content">
+    <h1><i class="fas fa-user-md"></i> Our Medical Team</h1>
+    <p class="subtitle">Experienced healthcare professionals dedicated to your wellbeing</p>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Doctors</h2>
+  <table class="table">
+    <thead>
+      <tr><th>ID</th><th>Name</th><th>Position</th><th>Specialization</th><th>Appointments</th></tr>
+    </thead>
+    <tbody>
+      {% for d in doctors %}
+      <tr>
+        <td>DR-{{ "%03d"|format(d.id) }}</td>
+        <td>{{ d.name }}</td>
+        <td>{{ d.position or '\u2014' }}</td>
+        <td>{{ d.specialization or '\u2014' }}</td>
+        <td>{{ d.appointments|length }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">No doctors found</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

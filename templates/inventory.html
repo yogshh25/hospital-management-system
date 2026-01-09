@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Background Hero -->
+<div class="page-background bg-inventory">
+  <div class="page-background-content">
+    <h1><i class="fas fa-boxes"></i> Inventory Management</h1>
+    <p class="subtitle">Track and manage medical supplies, equipment, and medications</p>
+  </div>
+</div>
+
+<div class="inventory-page">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2>Inventory Management</h2>
+    <button class="btn primary" onclick="showAddItemModal()">
+      <i class="fas fa-plus"></i> Add Item
+    </button>
+  </div>
+
+  <div id="alerts-panel" class="panel" style="margin-bottom: 1.5rem; background: #fff3cd; border-left: 4px solid #ffc107;">
+    <h4><i class="fas fa-exclamation-triangle"></i> Inventory Alerts</h4>
+    <div id="alerts-list"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Inventory Items</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Quantity</th>
+          <th>Unit</th>
+          <th>Low Stock Threshold</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="inventory-table">
+        <tr><td colspan="7">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Item Modal -->
+<div id="add-item-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3>Add Inventory Item</h3>
+      <button onclick="closeAddItemModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+    </div>
+    <form id="add-item-form">
+      <label class="field">
+        <span class="label">Item Name</span>
+        <input type="text" name="name" required>
+      </label>
+      <label class="field">
+        <span class="label">Category</span>
+        <select name="category" required>
+          <option value="Medicine">Medicine</option>
+          <option value="Equipment">Equipment</option>
+          <option value="Supplies">Supplies</option>
+        </select>
+      </label>
+      <div class="row">
+        <label class="field half">
+          <span class="label">Quantity</span>
+          <input type="number" name="quantity" min="0" required>
+        </label>
+        <label class="field half">
+          <span class="label">Unit</span>
+          <input type="text" name="unit" value="units" required>
+        </label>
+      </div>
+      <label class="field">
+        <span class="label">Low Stock Threshold</span>
+        <input type="number" name="low_stock_threshold" min="0" value="10" required>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn primary">Add Item</button>
+        <button type="button" class="btn ghost" onclick="closeAddItemModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.status-low {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-critical {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-ok {
+  background: #d4edda;
+  color: #155724;
+}
+</style>
+
+<script>
+let inventoryItems = [];
+
+async function loadInventory() {
+  try {
+    const items = await fetch('/api/inventory').then(r => r.json());
+    inventoryItems = items;
+    renderInventory(items);
+    loadAlerts();
+  } catch (err) {
+    console.error('Failed to load inventory:', err);
+  }
+}
+
+function renderInventory(items) {
+  const tbody = document.getElementById('inventory-table');
+  if (items.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7">No inventory items</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = items.map(item => {
+    let status = 'ok';
+    let statusText = 'OK';
+    if (item.quantity <= 5) {
+      status = 'critical';
+      statusText = 'Critical';
+    } else if (item.quantity <= item.low_stock_threshold) {
+      status = 'low';
+      statusText = 'Low';
+    }
+
+    return `
+      <tr>
+        <td>${item.name}</td>
+        <td>${item.category}</td>
+        <td>${item.quantity}</td>
+        <td>${item.unit}</td>
+        <td>${item.low_stock_threshold}</td>
+        <td><span class="status-badge status-${status}">${statusText}</span></td>
+        <td>
+          <button class="btn small" onclick="editItem(${item.id})">Edit</button>
+          <button class="btn small danger" onclick="deleteItem(${item.id})">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function loadAlerts() {
+  try {
+    const response = await fetch('/api/inventory/alerts');
+    const data = await response.json();
+    const alertsPanel = document.getElementById('alerts-panel');
+    const alertsList = document.getElementById('alerts-list');
+
+    if (data.alerts.length === 0) {
+      alertsPanel.style.display = 'none';
+      return;
+    }
+
+    alertsPanel.style.display = 'block';
+    alertsList.innerHTML = data.alerts.map(alert => `
+      <div style="padding: 0.5rem 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
+        <strong>${alert.item}</strong>: ${alert.message}
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load alerts:', err);
+  }
+}
+
+function showAddItemModal() {
+  document.getElementById('add-item-modal').style.display = 'flex';
+}
+
+function closeAddItemModal() {
+  document.getElementById('add-item-modal').style.display = 'none';
+  document.getElementById('add-item-form').reset();
+}
+
+document.getElementById('add-item-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData);
+  data.quantity = parseInt(data.quantity);
+  data.low_stock_threshold = parseInt(data.low_stock_threshold);
+
+  try {
+    await fetch('/api/inventory', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    closeAddItemModal();
+    loadInventory();
+  } catch (err) {
+    alert('Failed to add item: ' + err.message);
+  }
+});
+
+async function deleteItem(id) {
+  if (!confirm('Delete this item?')) return;
+  try {
+    await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
+    loadInventory();
+  } catch (err) {
+    alert('Failed to delete: ' + err.message);
+  }
+}
+
+function editItem(id) {
+  const item = inventoryItems.find(i => i.id === id);
+  if (!item) return;
+  
+  const newQty = prompt(`Update quantity for ${item.name}:`, item.quantity);
+  if (newQty === null) return;
+
+  fetch(`/api/inventory/${id}`, {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ quantity: parseInt(newQty) })
+  }).then(() => loadInventory()).catch(err => alert('Failed to update: ' + err.message));
+}
+
+// Load on page load
+document.addEventListener('DOMContentLoaded', loadInventory);
+</script>
+{% endblock %}
+

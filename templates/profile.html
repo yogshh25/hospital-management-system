@@ -1,0 +1,1216 @@
+{% extends "base.html" %}
+{% set title = "Profile" %}
+
+{% block content %}
+
+<!-- Page Background Hero -->
+<div class="page-background bg-doctors">
+  <div class="page-background-content">
+    <h1><i class="fas fa-user-circle"></i> My Profile</h1>
+    <p class="subtitle">Manage your personal information and account settings</p>
+  </div>
+</div>
+
+<div class="profile-container">
+  
+  <div class="profile-grid">
+    <!-- Profile Sidebar Card -->
+    <div class="profile-sidebar" id="profileSidebar">
+      <div class="card profile-card">
+        
+        <div class="profile-stats">
+          <div class="stat-item">
+            <div class="stat-icon">
+              <i class="fas fa-calendar"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Member Since</div>
+              <div class="stat-value">{{ user.joined }}</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon success">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Account Status</div>
+              <div class="stat-value text-success">Active</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-quick-links">
+          <a href="{{ url_for('settings') }}" class="quick-link">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+            <i class="fas fa-arrow-right"></i>
+          </a>
+          <a href="#" onclick="handleLogout(); return false;" class="quick-link danger">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+            <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="profile-main">
+      <!-- Tabs Navigation -->
+      <div class="card">
+        <div class="profile-tabs">
+          <button class="tab-btn active" data-tab="personal">
+            <i class="fas fa-user"></i> Personal Info
+          </button>
+          <button class="tab-btn" data-tab="security">
+            <i class="fas fa-lock"></i> Security
+          </button>
+          <button class="tab-btn" data-tab="activity">
+            <i class="fas fa-history"></i> Activity Log
+          </button>
+        </div>
+      </div>
+
+      <!-- Personal Info Tab -->
+      <div class="tab-content active" id="personal-tab">
+        <div class="card">
+          <div class="card-header-modern">
+            <div>
+              <h3><i class="fas fa-edit"></i> Edit Profile Information</h3>
+              <p class="card-subtitle">Update your personal details and contact information</p>
+            </div>
+          </div>
+          <form id="profile-form" class="modern-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="name">
+                  <i class="fas fa-user"></i> Full Name
+                  <span class="required">*</span>
+                </label>
+                <input type="text" id="name" name="name" value="{{ user.name }}" required 
+                       placeholder="Enter your full name">
+              </div>
+
+              <div class="form-group">
+                <label for="email">
+                  <i class="fas fa-envelope"></i> Email Address
+                  <span class="required">*</span>
+                </label>
+                <input type="email" id="email" name="email" value="{{ user.email }}" required
+                       placeholder="your.email@example.com">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="phone">
+                  <i class="fas fa-phone"></i> Phone Number
+                </label>
+                <input type="tel" id="phone" name="phone" value="{{ user.phone }}"
+                       placeholder="+1 (555) 123-4567">
+              </div>
+
+              <div class="form-group">
+                <label for="department">
+                  <i class="fas fa-building"></i> Department
+                </label>
+                <input type="text" id="department" name="department" value="{{ user.department }}" readonly>
+                <small class="form-hint">
+                  <i class="fas fa-info-circle"></i> Contact HR to change your department
+                </small>
+              </div>
+            </div>
+
+            <div class="form-actions-modern">
+              <button type="submit" class="btn btn-primary btn-modern">
+                <i class="fas fa-save"></i> Save Changes
+              </button>
+              <button type="button" class="btn btn-secondary btn-modern" onclick="resetProfileForm()">
+                <i class="fas fa-undo"></i> Reset
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Security Tab -->
+      <div class="tab-content" id="security-tab">
+        <div class="card">
+          <div class="card-header-modern">
+            <div>
+              <h3><i class="fas fa-lock"></i> Change Password</h3>
+              <p class="card-subtitle">Ensure your account is using a strong password</p>
+            </div>
+          </div>
+          <form id="password-form" class="modern-form">
+            <div class="form-group">
+              <label for="current-password">
+                Current Password
+                <span class="required">*</span>
+              </label>
+              <div class="password-input-wrapper">
+                <input type="password" id="current-password" name="current_password" required
+                       placeholder="Enter your current password">
+                <button type="button" class="password-toggle" onclick="togglePassword('current-password')">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-password">
+                  New Password
+                  <span class="required">*</span>
+                </label>
+                <div class="password-input-wrapper">
+                  <input type="password" id="new-password" name="new_password" required minlength="8"
+                         placeholder="Enter new password">
+                  <button type="button" class="password-toggle" onclick="togglePassword('new-password')">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+                <small class="form-hint">
+                  <i class="fas fa-info-circle"></i> Minimum 8 characters, include uppercase, lowercase, and numbers
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="confirm-password">
+                  Confirm New Password
+                  <span class="required">*</span>
+                </label>
+                <div class="password-input-wrapper">
+                  <input type="password" id="confirm-password" name="confirm_password" required
+                         placeholder="Confirm new password">
+                  <button type="button" class="password-toggle" onclick="togglePassword('confirm-password')">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="password-strength" id="password-strength" style="display: none;">
+              <div class="strength-meter">
+                <div class="strength-meter-fill" id="strength-meter-fill"></div>
+              </div>
+              <span class="strength-text" id="strength-text">Password strength: Weak</span>
+            </div>
+
+            <div class="form-actions-modern">
+              <button type="submit" class="btn btn-primary btn-modern">
+                <i class="fas fa-key"></i> Update Password
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Two-Factor Authentication -->
+        <div class="card">
+          <div class="card-header-modern">
+            <div>
+              <h3><i class="fas fa-mobile-alt"></i> Two-Factor Authentication</h3>
+              <p class="card-subtitle">Add an extra layer of security to your account</p>
+            </div>
+            <label class="toggle-switch-modern">
+              <input type="checkbox" id="2fa-toggle">
+              <span class="toggle-slider-modern"></span>
+            </label>
+          </div>
+          <div class="card-body">
+            <div class="info-box">
+              <i class="fas fa-shield-alt"></i>
+              <div>
+                <strong>Protect Your Account</strong>
+                <p>Two-factor authentication adds an additional layer of security by requiring a code from your phone in addition to your password.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Log Tab -->
+      <div class="tab-content" id="activity-tab">
+        <div class="card">
+          <div class="card-header-modern">
+            <div>
+              <h3><i class="fas fa-history"></i> Recent Activity</h3>
+              <p class="card-subtitle">Your recent account activity and login history</p>
+            </div>
+          </div>
+          <div class="activity-timeline">
+            <div class="activity-item">
+              <div class="activity-icon success">
+                <i class="fas fa-sign-in-alt"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Logged in successfully</div>
+                <div class="activity-meta">
+                  <span><i class="fas fa-clock"></i> Today at 10:30 AM</span>
+                  <span><i class="fas fa-laptop"></i> Chrome on MacOS</span>
+                  <span><i class="fas fa-map-marker-alt"></i> New York, US</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon info">
+                <i class="fas fa-user-edit"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Profile information updated</div>
+                <div class="activity-meta">
+                  <span><i class="fas fa-clock"></i> Yesterday at 3:15 PM</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon success">
+                <i class="fas fa-calendar-check"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Created new appointment</div>
+                <div class="activity-meta">
+                  <span><i class="fas fa-clock"></i> 2 days ago at 11:20 AM</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon warning">
+                <i class="fas fa-key"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Password changed</div>
+                <div class="activity-meta">
+                  <span><i class="fas fa-clock"></i> Last week</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabName = btn.dataset.tab;
+    
+    // Remove active class from all tabs and content
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    // Add active class to clicked tab and corresponding content
+    btn.classList.add('active');
+    document.getElementById(tabName + '-tab').classList.add('active');
+  });
+});
+
+// Password toggle
+function togglePassword(inputId) {
+  const input = document.getElementById(inputId);
+  const btn = input.nextElementSibling;
+  const icon = btn.querySelector('i');
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+// Password strength checker
+document.getElementById('new-password').addEventListener('input', (e) => {
+  const password = e.target.value;
+  const strengthContainer = document.getElementById('password-strength');
+  const strengthFill = document.getElementById('strength-meter-fill');
+  const strengthText = document.getElementById('strength-text');
+  
+  if (!password) {
+    strengthContainer.style.display = 'none';
+    return;
+  }
+  
+  strengthContainer.style.display = 'block';
+  
+  let strength = 0;
+  if (password.length >= 8) strength++;
+  if (password.match(/[a-z]/)) strength++;
+  if (password.match(/[A-Z]/)) strength++;
+  if (password.match(/[0-9]/)) strength++;
+  if (password.match(/[^a-zA-Z0-9]/)) strength++;
+  
+  const percent = (strength / 5) * 100;
+  strengthFill.style.width = percent + '%';
+  
+  let color, text;
+  if (strength <= 2) {
+    color = '#ef4444';
+    text = 'Weak';
+  } else if (strength <= 3) {
+    color = '#f59e0b';
+    text = 'Fair';
+  } else if (strength <= 4) {
+    color = '#10b981';
+    text = 'Good';
+  } else {
+    color = '#059669';
+    text = 'Strong';
+  }
+  
+  strengthFill.style.background = color;
+  strengthText.textContent = `Password strength: ${text}`;
+  strengthText.style.color = color;
+});
+
+// Photo upload
+function handlePhotoUpload() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        document.querySelector('.avatar-img').src = event.target.result;
+        showToast('Profile photo updated!', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  input.click();
+}
+
+// Reset profile form
+function resetProfileForm() {
+  document.getElementById('profile-form').reset();
+  showToast('Form reset', 'success');
+}
+
+// Profile form submission
+document.getElementById('profile-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData);
+  
+  try {
+    const response = await fetch('/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(data)
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      showToast('Profile updated successfully!', 'success');
+    } else {
+      showToast('Failed to update profile', 'error');
+    }
+  } catch (err) {
+    showToast('Error updating profile: ' + err.message, 'error');
+  }
+});
+
+// Password form submission
+document.getElementById('password-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData);
+  
+  // Validate passwords match
+  if (data.new_password !== data.confirm_password) {
+    showToast('Passwords do not match', 'error');
+    return;
+  }
+  
+  try {
+    showToast('Password updated successfully!', 'success');
+    e.target.reset();
+    document.getElementById('password-strength').style.display = 'none';
+  } catch (err) {
+    showToast('Error updating password: ' + err.message, 'error');
+  }
+});
+
+// 2FA Toggle
+document.getElementById('2fa-toggle').addEventListener('change', (e) => {
+  const enabled = e.target.checked;
+  if (enabled) {
+    showToast('Two-factor authentication enabled', 'success');
+  } else {
+    if (confirm('Are you sure you want to disable two-factor authentication?')) {
+      showToast('Two-factor authentication disabled', 'success');
+    } else {
+      e.target.checked = true;
+    }
+  }
+});
+
+// Toggle Sidebar
+function toggleSidebar() {
+  const sidebar = document.getElementById('profileSidebar');
+  const toggleBtn = document.querySelector('.sidebar-toggle-btn');
+  const grid = document.querySelector('.profile-grid');
+  
+  sidebar.classList.toggle('collapsed');
+  if (grid) grid.classList.toggle('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+  
+  // Change icon based on state
+  const icon = toggleBtn.querySelector('i');
+  if (sidebar.classList.contains('collapsed')) {
+    icon.classList.remove('fa-bars');
+    icon.classList.add('fa-chevron-right');
+    toggleBtn.setAttribute('title', 'Show sidebar');
+    toggleBtn.classList.add('collapsed');
+  } else {
+    icon.classList.remove('fa-chevron-right');
+    icon.classList.add('fa-bars');
+    toggleBtn.setAttribute('title', 'Hide sidebar');
+    toggleBtn.classList.remove('collapsed');
+  }
+}
+</script>
+
+<style>
+/* Profile Container */
+.profile-container {
+  max-width: 100%;
+  margin: 0;
+  padding-bottom: 2rem;
+  position: relative;
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle-btn {
+  position: relative;
+  z-index: 2;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(10, 168, 158, 0.3);
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+}
+
+.sidebar-toggle-btn:hover {
+  background: #0c6b63;
+  transform: scale(1.1);
+}
+
+.sidebar-toggle-btn i { font-size: 1rem; margin-right: .4rem; }
+.sidebar-toggle-btn.collapsed i { margin-right: .4rem; }
+.sidebar-toggle-btn span { font-weight: 600; }
+
+/* Grid Layout */
+.profile-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 2rem;
+  align-items: start;
+  transition: all 0.3s ease;
+}
+
+.profile-grid.sidebar-collapsed {
+  grid-template-columns: 1fr;
+}
+
+/* Sidebar Profile Card */
+.profile-sidebar {
+  position: sticky;
+  top: 2rem;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  max-width: 380px;
+}
+
+.profile-sidebar.collapsed {
+  transform: translateX(-420px);
+  opacity: 0;
+  pointer-events: none;
+  max-width: 0;
+  margin-right: -380px;
+}
+
+.profile-sidebar.collapsed + .profile-main { grid-column: 1 / -1; max-width: 100%; }
+
+.profile-card {
+  overflow: hidden;
+}
+
+.profile-avatar-section {
+  text-align: center;
+  padding: 2.5rem 2rem;
+  background: linear-gradient(135deg, rgba(10, 168, 158, 0.05) 0%, rgba(12, 107, 99, 0.05) 100%);
+  border-bottom: 1px solid rgba(10, 168, 158, 0.1);
+}
+
+.profile-avatar-wrapper {
+  display: inline-block;
+  position: relative;
+}
+
+.profile-avatar-large {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.5rem;
+}
+
+.avatar-img {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 5px solid white;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  transition: transform 0.3s ease;
+}
+
+.profile-avatar-large:hover .avatar-img {
+  transform: scale(1.05);
+}
+
+.avatar-status {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid white;
+}
+
+.avatar-status.online {
+  background: #10b981;
+}
+
+.avatar-edit-btn {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.avatar-edit-btn:hover {
+  background: #0c6b63;
+  transform: scale(1.1);
+}
+
+.profile-header-info h2 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #122;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--accent), #0c6b63);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 2px 8px rgba(10, 168, 158, 0.3);
+}
+
+.department-text {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  margin: 0.5rem 0 0 0;
+}
+
+/* Profile Stats */
+.profile-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 1.5rem;
+  background: white;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.stat-item:hover {
+  background: rgba(10, 168, 158, 0.05);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(10, 168, 158, 0.1), rgba(12, 107, 99, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon i {
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.stat-icon.success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+}
+
+.stat-icon.success i {
+  color: #10b981;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #122;
+}
+
+.text-success {
+  color: #10b981 !important;
+}
+
+/* Quick Links */
+.profile-quick-links {
+  padding: 1rem;
+  border-top: 1px solid var(--bg);
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #122;
+  transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
+}
+
+.quick-link:hover {
+  background: rgba(10, 168, 158, 0.05);
+  transform: translateX(4px);
+}
+
+.quick-link i:first-child {
+  width: 20px;
+  text-align: center;
+  color: var(--accent);
+}
+
+.quick-link span {
+  flex: 1;
+  font-weight: 500;
+}
+
+.quick-link i:last-child {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.quick-link.danger:hover {
+  background: rgba(220, 53, 69, 0.05);
+}
+
+.quick-link.danger i {
+  color: var(--danger) !important;
+}
+
+/* Tabs */
+.profile-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-bottom: 2px solid var(--bg);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tab-btn:hover {
+  background: rgba(10, 168, 158, 0.05);
+  color: var(--accent);
+}
+
+.tab-btn.active {
+  background: white;
+  color: var(--accent);
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Modern Form */
+.modern-form {
+  padding: 2rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #122;
+  margin-bottom: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.required {
+  color: var(--danger);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(10, 168, 158, 0.1);
+}
+
+.form-group input:read-only {
+  background: var(--bg);
+  cursor: not-allowed;
+}
+
+.form-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+
+/* Password Input */
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-input-wrapper input {
+  padding-right: 3rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: var(--accent);
+}
+
+/* Password Strength */
+.password-strength {
+  margin-top: 1rem;
+}
+
+.strength-meter {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.strength-meter-fill {
+  height: 100%;
+  width: 0%;
+  transition: all 0.3s ease;
+  border-radius: 3px;
+}
+
+.strength-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* Modern Buttons */
+.form-actions-modern {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--bg);
+}
+
+.btn-modern {
+  padding: 0.875rem 1.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-modern:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Card Header Modern */
+.card-header-modern {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--bg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header-modern h3 {
+  margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  color: #122;
+}
+
+.card-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.card-body {
+  padding: 2rem;
+}
+
+/* Info Box */
+.info-box {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgba(10, 168, 158, 0.05);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+}
+
+.info-box i {
+  font-size: 1.5rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.info-box strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #122;
+}
+
+.info-box p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* Toggle Switch Modern */
+.toggle-switch-modern {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 30px;
+}
+
+.toggle-switch-modern input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider-modern {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 30px;
+}
+
+.toggle-slider-modern:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-switch-modern input:checked + .toggle-slider-modern {
+  background-color: var(--accent);
+}
+
+.toggle-switch-modern input:checked + .toggle-slider-modern:before {
+  transform: translateX(26px);
+}
+
+/* Activity Timeline */
+.activity-timeline {
+  padding: 2rem;
+}
+
+.activity-item {
+  display: flex;
+  gap: 1.25rem;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--bg);
+  position: relative;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.activity-item::before {
+  content: '';
+  position: absolute;
+  left: 23px;
+  top: 48px;
+  bottom: -24px;
+  width: 2px;
+  background: var(--bg);
+}
+
+.activity-item:last-child::before {
+  display: none;
+}
+
+.activity-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(10, 168, 158, 0.1), rgba(12, 107, 99, 0.1));
+  position: relative;
+  z-index: 1;
+}
+
+.activity-icon i {
+  font-size: 1.125rem;
+  color: var(--accent);
+}
+
+.activity-icon.success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+}
+
+.activity-icon.success i {
+  color: #10b981;
+}
+
+.activity-icon.info {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+}
+
+.activity-icon.info i {
+  color: #3b82f6;
+}
+
+.activity-icon.warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1));
+}
+
+.activity-icon.warning i {
+  color: #f59e0b;
+}
+
+.activity-content {
+  flex: 1;
+  padding-top: 0.5rem;
+}
+
+.activity-title {
+  font-weight: 600;
+  color: #122;
+  margin-bottom: 0.5rem;
+}
+
+.activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.activity-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .profile-sidebar {
+    position: static;
+  }
+  
+  .profile-sidebar.collapsed {
+    display: none;
+  }
+  
+  .sidebar-toggle-btn { display: inline-flex; }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar-toggle-btn { padding: 0.45rem 0.6rem; }
+  
+  .profile-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .tab-btn {
+    white-space: nowrap;
+  }
+  
+  .modern-form {
+    padding: 1.5rem;
+  }
+  
+  .activity-timeline {
+    padding: 1.5rem;
+  }
+}
+
+/* Hide toggle button on large screens by default */
+@media (min-width: 1025px) {
+  .sidebar-toggle-btn {
+    display: flex;
+  }
+}
+</style>
+{% endblock %}

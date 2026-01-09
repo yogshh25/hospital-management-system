@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Server Test</title>
+</head>
+<body>
+    <h1>Server is Working!</h1>
+    <p>If you can see this page, the Flask server is running correctly.</p>
+    <p><a href="/">Go to Dashboard</a></p>
+    <script>
+        console.log("JavaScript is working");
+        fetch('/api/appointments')
+            .then(r => r.json())
+            .then(data => console.log("API test:", data))
+            .catch(e => console.error("API error:", e));
+    </script>
+</body>
+</html>
+

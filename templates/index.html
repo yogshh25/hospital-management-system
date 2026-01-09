@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Hero Section -->
+<div class="hero-background">
+  <div class="hero-content">
+    <h1><i class="fas fa-hospital"></i> Welcome to MediCare Hospital Management</h1>
+    <p>Streamline your healthcare operations with our comprehensive management system. Monitor patients, schedule appointments, manage inventory, and leverage AI-powered insights.</p>
+    <div class="hero-actions">
+      <a href="{{ url_for('new_patient') }}" class="hero-btn hero-btn-primary">
+        <i class="fas fa-user-plus"></i> Add New Patient
+      </a>
+      <a href="{{ url_for('appointments') }}" class="hero-btn hero-btn-secondary">
+        <i class="fas fa-calendar-check"></i> Book Appointment
+      </a>
+    </div>
+  </div>
+</div>
+
+<section class="dashboard">
+  <section class="cards">
+  <a class="card" href="{{ url_for('new_patient') }}">
+      <div class="card-left"><i class="fas fa-users"></i></div>
+      <div class="card-right">
+        <p class="muted">Total Patients</p>
+        <h3>{{ patients|length }}</h3>
+        <small class="link">Click to view all patients</small>
+      </div>
+    </a>
+
+  <a class="card" href="{{ url_for('appointments') }}">
+      <div class="card-left"><i class="fas fa-calendar-check"></i></div>
+      <div class="card-right">
+        <p class="muted">Appointments</p>
+        <h3>Schedule</h3>
+        <small class="link">Click to book appointment</small>
+      </div>
+    </a>
+
+    <div class="card">
+      <div class="card-left"><i class="fas fa-user-md"></i></div>
+      <div class="card-right">
+        <p class="muted">Available Doctors</p>
+        <h3>View Schedule</h3>
+        <small class="link">Click to check availability</small>
+      </div>
+    </div>
+
+    <a class="card" href="{{ url_for('reports') }}">
+      <div class="card-left"><i class="fas fa-chart-line"></i></div>
+      <div class="card-right">
+        <p class="muted">Analytics</p>
+        <h3>Reports</h3>
+        <small class="link">View reports</small>
+      </div>
+    </a>
+  </section>
+
+  <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+    <div class="panel" id="inventory-alerts-dashboard" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+      <h4><i class="fas fa-exclamation-triangle"></i> Inventory Alerts</h4>
+      <div id="dashboard-alerts">Loading...</div>
+    </div>
+    <div class="panel">
+      <h4><i class="fas fa-robot"></i> AI Features</h4>
+      <div style="padding: 0.5rem 0;">
+        <a href="{{ url_for('ai_search') }}" class="btn" style="background: #0aa89e; color: white; margin-right: 0.5rem;">
+          <i class="fas fa-search"></i> AI Search
+        </a>
+        <a href="{{ url_for('appointments') }}" class="btn" style="background: #0aa89e; color: white;">
+          <i class="fas fa-calendar-check"></i> AI Scheduling
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="recent">
+    <div class="panel">
+      <h4>Recent Patients</h4>
+      <table class="table">
+        <thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Registered</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for p in patients[:8] %}
+          <tr data-id="{{ p.id }}">
+            <td>PT-{{ "%04d"|format(p.id) }}</td>
+            <td>{{ p.name }}</td>
+            <td>{{ p.contact or '\u2014' }}</td>
+            <td>{{ p.dob or '\u2014' }}</td>
+            <td><button class="btn small danger delete-patient" data-id="{{ p.id }}">Delete</button></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5">No patients yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+<script>
+// Load inventory alerts on dashboard
+async function loadDashboardAlerts() {
+  try {
+    const response = await fetch('/api/inventory/alerts');
+    const data = await response.json();
+    const alertsEl = document.getElementById('dashboard-alerts');
+    const panel = document.getElementById('inventory-alerts-dashboard');
+    
+    if (data.alerts && data.alerts.length > 0) {
+      alertsEl.innerHTML = data.alerts.slice(0, 3).map(alert => `
+        <div style="padding: 0.25rem 0; font-size: 0.9em;">
+          <strong>${alert.item}</strong>: ${alert.quantity} remaining
+        </div>
+      `).join('');
+      if (data.alerts.length > 3) {
+        alertsEl.innerHTML += `<div style="margin-top: 0.5rem;"><a href="/inventory" style="color: #856404;">View all ${data.alerts.length} alerts</a></div>`;
+      }
+      panel.style.display = 'block';
+    } else {
+      panel.style.display = 'none';
+    }
+  } catch (err) {
+    console.error('Failed to load alerts:', err);
+    document.getElementById('inventory-alerts-dashboard').style.display = 'none';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadDashboardAlerts);
+</script>
+{% endblock %}

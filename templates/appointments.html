@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Background Hero -->
+<div class="page-background bg-appointments">
+  <div class="page-background-content">
+    <h1><i class="fas fa-calendar-check"></i> Appointment Scheduling</h1>
+    <p class="subtitle">Book and manage patient appointments with our medical team</p>
+  </div>
+</div>
+
+<div class="appointments-grid">
+  <div class="panel">
+    <h3>Schedule Appointment</h3>
+    <form id="appointment-form" class="appointment-form">
+      <label class="field">
+        <span class="label">Doctor</span>
+        <select id="doctor" name="doctor" required>
+          <option value="">Choose a doctor...</option>
+          {% for d in doctors %}
+            <option value="{{ d.id }}">{{ d.name }} — {{ d.specialization or 'General' }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="field">
+        <span class="label">Patient</span>
+        <select id="patient" name="patient" required>
+          <option value="">Choose a patient...</option>
+          {% for p in patients %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <div class="row">
+        <label class="field half">
+          <span class="label">Date</span>
+          <input id="appt-date" name="date" type="date" required>
+        </label>
+
+        <label class="field half">
+          <span class="label">Time slot</span>
+          <select id="appt-time" name="time" required>
+            <option value="">Select date first</option>
+          </select>
+        </label>
+      </div>
+
+      <div style="margin: 1rem 0;">
+        <button type="button" class="btn" id="ai-suggest-btn" onclick="getAISuggestions()" style="background: #0aa89e; color: white;">
+          <i class="fas fa-robot"></i> AI Suggest Best Time
+        </button>
+        <div id="ai-suggestions" style="margin-top: 0.5rem;"></div>
+      </div>
+
+      <label class="field">
+        <span class="label">Notes</span>
+        <textarea id="notes" name="notes" rows="3" placeholder="Optional notes..."></textarea>
+      </label>
+
+      <div class="form-actions">
+        <button type="submit" class="btn primary">Schedule</button>
+        <button type="button" class="btn ghost" onclick="resetForm()">Reset</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3>Upcoming Appointments</h3>
+    <div id="upcoming">
+      <!-- filled by app.js -->
+    </div>
+  </div>
+</div>
+{% endblock %}

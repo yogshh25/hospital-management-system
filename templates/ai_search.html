@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Background Hero -->
+<div class="page-background bg-ai">
+  <div class="page-background-content">
+    <h1><i class="fas fa-robot"></i> AI-Powered Healthcare Assistant</h1>
+    <p class="subtitle">Natural language search and intelligent insights for better healthcare decisions</p>
+  </div>
+</div>
+
+<div class="ai-search-page">
+  <h2><i class="fas fa-robot"></i> AI-Powered Search</h2>
+  <p style="color: #666; margin-bottom: 2rem;">Ask questions in natural language to find appointments, patients, doctors, and schedules.</p>
+
+  <div class="panel" style="margin-bottom: 2rem;">
+    <div style="display: flex; gap: 1rem;">
+      <input type="text" id="nlp-query-input" placeholder="Try: 'Show today's appointments for Dr. Smith' or 'Find patient John'" 
+             style="flex: 1; padding: 0.75rem; border: 2px solid #0aa89e; border-radius: 8px; font-size: 1rem;">
+      <button class="btn primary" onclick="executeNLPQuery()" style="padding: 0.75rem 2rem;">
+        <i class="fas fa-search"></i> Search
+      </button>
+    </div>
+    
+    <div style="margin-top: 1rem; font-size: 0.9em; color: #666;">
+      <strong>Example queries:</strong>
+      <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+        <li>"Show today's appointments"</li>
+        <li>"Show appointments for Dr. Smith"</li>
+        <li>"Find patient John"</li>
+        <li>"When is Dr. Lee available?"</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="nlp-results" class="panel" style="display: none;">
+    <h3>Search Results</h3>
+    <div id="nlp-results-content"></div>
+  </div>
+
+  <div class="panel" style="margin-top: 2rem;">
+    <h3>Patient Flow Prediction</h3>
+    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+      <input type="date" id="flow-date-input" 
+             style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px;">
+      <button class="btn" onclick="predictFlow()" style="background: #0aa89e; color: white;">
+        <i class="fas fa-chart-line"></i> Predict Flow
+      </button>
+    </div>
+    <div id="flow-prediction-results"></div>
+  </div>
+</div>
+
+<script>
+async function executeNLPQuery() {
+  const input = document.getElementById('nlp-query-input');
+  const query = input.value.trim();
+  
+  if (!query) {
+    alert('Please enter a query');
+    return;
+  }
+  
+  const resultsEl = document.getElementById('nlp-results');
+  const contentEl = document.getElementById('nlp-results-content');
+  
+  resultsEl.style.display = 'block';
+  contentEl.innerHTML = '<div style="padding: 1rem;"><i class="fas fa-spinner fa-spin"></i> Processing query...</div>';
+  
+  try {
+    const result = await processNLPQuery(query);
+    
+    if (result.error) {
+      contentEl.innerHTML = `<div style="padding: 1rem; color: #d32f2f;">Error: ${result.error}</div>`;
+      return;
+    }
+    
+    let html = `<div style="padding: 1rem;">
+      <div style="margin-bottom: 1rem;">
+        <strong>Intent:</strong> <span style="background: #e9fbf9; padding: 0.25rem 0.5rem; border-radius: 4px;">${result.intent}</span>
+      </div>`;
+    
+    if (result.results && result.results.length > 0) {
+      if (result.intent === 'today_appointments' || result.intent === 'doctor_appointments') {
+        html += '<table class="table"><thead><tr><th>Patient</th><th>Doctor</th><th>Time</th><th>Status</th></tr></thead><tbody>';
+        result.results.forEach(appt => {
+          const dt = new Date(appt.time);
+          html += `<tr>
+            <td>${appt.patient}</td>
+            <td>${appt.doctor}</td>
+            <td>${dt.toLocaleString()}</td>
+            <td>${appt.status}</td>
+          </tr>`;
+        });
+        html += '</tbody></table>';
+      } else if (result.intent === 'patient_search') {
+        html += '<table class="table"><thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>DOB</th></tr></thead><tbody>';
+        result.results.forEach(patient => {
+          html += `<tr>
+            <td>PT-${String(patient.id).padStart(4, '0')}</td>
+            <td>${patient.name}</td>
+            <td>${patient.contact || '—'}</td>
+            <td>${patient.dob || '—'}</td>
+          </tr>`;
+        });
+        html += '</tbody></table>';
+      } else if (result.intent === 'doctor_schedule') {
+        result.results.forEach(doctor => {
+          html += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #f9f9f9; border-radius: 8px;">
+            <h4>${doctor.doctor} - ${doctor.specialization}</h4>
+            <table class="table" style="margin-top: 0.5rem;">
+              <thead><tr><th>Date/Time</th><th>Patient</th><th>Status</th></tr></thead>
+              <tbody>`;
+          doctor.appointments.forEach(appt => {
+            const dt = new Date(appt.date);
+            html += `<tr>
+              <td>${dt.toLocaleString()}</td>
+              <td>${appt.patient}</td>
+              <td>${appt.status}</td>
+            </tr>`;
+          });
+          html += '</tbody></table></div>';
+        });
+      }
+    } else {
+      html += '<div style="padding: 1rem; color: #666;">No results found</div>';
+    }
+    
+    html += '</div>';
+    contentEl.innerHTML = html;
+  } catch (err) {
+    contentEl.innerHTML = `<div style="padding: 1rem; color: #d32f2f;">Error: ${err.message}</div>`;
+  }
+}
+
+// Allow Enter key to trigger search
+document.getElementById('nlp-query-input').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    executeNLPQuery();
+  }
+});
+
+async function predictFlow() {
+  const dateInput = document.getElementById('flow-date-input');
+  const date = dateInput.value;
+  const resultsEl = document.getElementById('flow-prediction-results');
+  
+  if (!date) {
+    alert('Please select a date');
+    return;
+  }
+  
+  resultsEl.innerHTML = '<div style="padding: 1rem;"><i class="fas fa-spinner fa-spin"></i> Predicting patient flow...</div>';
+  
+  try {
+    const prediction = await predictPatientFlow(date);
+    
+    if (prediction.error) {
+      resultsEl.innerHTML = `<div style="padding: 1rem; color: #d32f2f;">Error: ${prediction.error}</div>`;
+      return;
+    }
+    
+    let html = `<div style="padding: 1rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+        <div style="background: #e9fbf9; padding: 1rem; border-radius: 8px;">
+          <div style="color: #666; font-size: 0.9em;">Total Appointments</div>
+          <div style="font-size: 1.5em; font-weight: bold; color: #0aa89e;">${prediction.total_appointments || 0}</div>
+        </div>
+        <div style="background: #fff3cd; padding: 1rem; border-radius: 8px;">
+          <div style="color: #666; font-size: 0.9em;">Predicted No-Shows</div>
+          <div style="font-size: 1.5em; font-weight: bold; color: #856404;">${prediction.predicted_no_shows || 0}</div>
+        </div>
+        <div style="background: #d4edda; padding: 1rem; border-radius: 8px;">
+          <div style="color: #666; font-size: 0.9em;">Expected Arrivals</div>
+          <div style="font-size: 1.5em; font-weight: bold; color: #155724;">${prediction.expected_arrivals || 0}</div>
+        </div>
+      </div>`;
+    
+    if (prediction.predicted_peak_hours && prediction.predicted_peak_hours.length > 0) {
+      html += '<h4>Busy Periods</h4><ul>';
+      prediction.predicted_peak_hours.forEach(period => {
+        html += `<li>${period.hour}:00 - ${period.hour + 1}:00: ${period.status} (${period.predicted_count} appointments)</li>`;
+      });
+      html += '</ul>';
+    } else {
+      html += '<div style="color: #666;">No busy periods predicted</div>';
+    }
+    
+    html += '</div>';
+    resultsEl.innerHTML = html;
+  } catch (err) {
+    resultsEl.innerHTML = `<div style="padding: 1rem; color: #d32f2f;">Error: ${err.message}</div>`;
+  }
+}
+
+// Set default date to tomorrow
+document.addEventListener('DOMContentLoaded', () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById('flow-date-input').value = tomorrow.toISOString().split('T')[0];
+  
+  // Check for query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const query = urlParams.get('q');
+  if (query) {
+    document.getElementById('nlp-query-input').value = query;
+    executeNLPQuery();
+  }
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="reports-page">
+  <h2>Appointment Reports</h2>
+  
+  <div class="cards" style="margin-bottom: 2rem;">
+    <div class="card">
+      <div class="card-left"><i class="fas fa-calendar-check"></i></div>
+      <div class="card-right">
+        <p class="muted">Total Appointments</p>
+        <h3 id="total-appts">-</h3>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-left"><i class="fas fa-check-circle"></i></div>
+      <div class="card-right">
+        <p class="muted">Completed</p>
+        <h3 id="completed-appts">-</h3>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-left"><i class="fas fa-times-circle"></i></div>
+      <div class="card-right">
+        <p class="muted">Cancelled</p>
+        <h3 id="cancelled-appts">-</h3>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+    <div class="panel">
+      <h3>By Doctor</h3>
+      <div id="by-doctor">
+        <!-- filled by JavaScript -->
+      </div>
+    </div>
+    
+    <div class="panel">
+      <h3>By Day</h3>
+      <div id="by-day">
+        <!-- filled by JavaScript -->
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const data = await fetch('/api/reports/appointments').then(r => r.json());
+    
+    document.getElementById('total-appts').textContent = data.total || 0;
+    document.getElementById('completed-appts').textContent = data.completed || 0;
+    document.getElementById('cancelled-appts').textContent = data.cancelled || 0;
+    
+    // By doctor
+    const doctorEl = document.getElementById('by-doctor');
+    if (data.by_doctor) {
+      doctorEl.innerHTML = Object.entries(data.by_doctor)
+        .map(([name, count]) => `<div style="padding: 0.5rem 0; border-bottom: 1px solid #f1f4f6;">
+          <strong>${name}</strong>: ${count}
+        </div>`)
+        .join('');
+    } else {
+      doctorEl.innerHTML = '<div class="muted">No data available</div>';
+    }
+    
+    // By day
+    const dayEl = document.getElementById('by-day');
+    if (data.by_day) {
+      dayEl.innerHTML = Object.entries(data.by_day)
+        .map(([day, count]) => `<div style="padding: 0.5rem 0; border-bottom: 1px solid #f1f4f6;">
+          <strong>${day}</strong>: ${count}
+        </div>`)
+        .join('');
+    } else {
+      dayEl.innerHTML = '<div class="muted">No data available</div>';
+    }
+  } catch (err) {
+    console.error('Failed to load reports:', err);
+    document.getElementById('total-appts').textContent = 'Error';
+  }
+});
+</script>
+{% endblock %}
+
